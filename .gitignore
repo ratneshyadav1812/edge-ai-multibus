@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+
+# Model weights
+*.pth
+*.onnx
+
+# Video files
+*.mp4
+*.avi
+*.mov
+
+# Data archives
+*.zip
+*.tar.gz
+
+# Inference outputs
+output/
+
+# Datasets
+extracted/
+merged_pothole_dataset/
+merged_pothole_dataset.zip
+
+# Environment / secrets
+.env
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
