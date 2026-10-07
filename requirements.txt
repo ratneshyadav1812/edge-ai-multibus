@@ -1,0 +1,13 @@
+# Core inference
+ultralytics==8.4.189
+opencv-python==5.0.0.93
+torch==2.14.1
+torchvision==0.29.1
+
+# Backend server
+fastapi==0.162.0
+uvicorn==0.54.0
+python-socketio==5.17.0
+python-dotenv>=1.0.0
+pydantic==2.14.1
+requests==2.34.2
