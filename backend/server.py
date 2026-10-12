@@ -16,3 +16,13 @@ app.add_middleware(
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+from pydantic import BaseModel
+
+class RoadEvent(BaseModel):
+    bus_id: str
+    event_type: str
+    latitude: float
+    longitude: float
+    timestamp: str
+    details: str
