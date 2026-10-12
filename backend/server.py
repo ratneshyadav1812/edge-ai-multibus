@@ -1,10 +1,17 @@
 """
 Backend server — pure event broker.
+Receives POSTed events from inference.py and broadcasts to browser clients via Socket.IO.
+No model/inference logic here.
 """
+import socketio
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 app = FastAPI(title="Urban Road Intelligence API")
+sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
+socket_app = socketio.ASGIApp(sio, other_asgi_app=app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -13,12 +20,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
-
-from pydantic import BaseModel
-
 class RoadEvent(BaseModel):
     bus_id: str
     event_type: str
@@ -26,3 +27,25 @@ class RoadEvent(BaseModel):
     longitude: float
     timestamp: str
     details: str
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+@app.post("/api/events")
+async def receive_event(event: RoadEvent):
+    """Inference client POSTs here; we push to all connected browsers instantly."""
+    await sio.emit("new_road_event", event.model_dump())
+    print(f"[EVENT] {event.event_type} @ {event.latitude:.5f}, {event.longitude:.5f}")
+    return {"status": "success"}
+
+@sio.event
+async def connect(sid, environ):
+    print(f"[WS] connected: {sid}")
+
+@sio.event
+async def disconnect(sid):
+    print(f"[WS] disconnected: {sid}")
+
+if __name__ == "__main__":
+    uvicorn.run("backend.server:socket_app", host="0.0.0.0", port=8000, reload=False)
