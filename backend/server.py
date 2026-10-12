@@ -3,11 +3,15 @@ Backend server — pure event broker.
 Receives POSTed events from inference.py and broadcasts to browser clients via Socket.IO.
 No model/inference logic here.
 """
+import os
 import socketio
 import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+load_dotenv()  # loads .env from cwd (project root)
 
 app = FastAPI(title="Urban Road Intelligence API")
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
@@ -31,6 +35,12 @@ class RoadEvent(BaseModel):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.get("/api/config")
+async def get_config():
+    """Expose public config to the frontend."""
+    return {"geoapify_api_key": os.getenv("GEOAPIFY_API_KEY", "")}
+
 
 @app.post("/api/events")
 async def receive_event(event: RoadEvent):
