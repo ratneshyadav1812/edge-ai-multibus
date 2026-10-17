@@ -40,7 +40,22 @@
     </section>
   </main>
 <script>
-  const map = L.map("map").setView([29.9457, 76.8116], 14);
+  const SERVER_URL = 'http://localhost:8000';
+  const map = L.map('map', { zoomControl: true }).setView([29.9457, 76.8116], 14);
+
+  fetch(`${SERVER_URL}/api/config`)
+    .then(r => r.json())
+    .then(({ geoapify_api_key }) => {
+      L.tileLayer(
+        `https://maps.geoapify.com/v1/tile/dark-matter/{z}/{x}/{y}.png?apiKey=${geoapify_api_key}`,
+        { attribution: '&copy; <a href="https://geoapify.com/">Geoapify</a> &copy; OpenMapTiles &copy; OpenStreetMap', maxZoom: 20 }
+      ).addTo(map);
+    })
+    .catch(() => {
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://carto.com/">CARTO</a>', subdomains: 'abcd', maxZoom: 19,
+      }).addTo(map);
+    });
 </script>
 </div>
 </body>
