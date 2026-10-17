@@ -18,6 +18,12 @@
     } }
   };
 </script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  html, body { height: 100%; }
+  .leaflet-container { background: #0f1216; }
+</style>
 </head>
 
 <body class="bg-asphalt-950 text-slate-200 font-sans antialiased">
@@ -29,7 +35,13 @@
     </div>
   </header>
   <main class="flex flex-1 min-h-0 flex-col md:flex-row">
+    <section class="relative flex-1 min-h-[45vh]" aria-label="Event map">
+      <div id="map" class="absolute inset-0"></div>
+    </section>
   </main>
+<script>
+  const map = L.map("map").setView([29.9457, 76.8116], 14);
+</script>
 </div>
 </body>
 </html>
