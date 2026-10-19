@@ -20,6 +20,7 @@
 </script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 <style>
   html, body { height: 100%; }
   .leaflet-container { background: #0f1216; }
@@ -32,6 +33,12 @@
     <div>
       <h1 class="text-lg font-extrabold tracking-tight">Urban Road Intelligence</h1>
       <p class="text-xs text-asphalt-500">Live detections from bus-mounted edge cameras</p>
+    </div>
+    <div class="flex items-center gap-5">
+      <div id="status" class="flex items-center gap-2 rounded-full bg-asphalt-800 border border-asphalt-700 px-3 py-1.5 text-xs font-semibold" role="status" aria-live="polite">
+        <span id="status-dot" class="h-2 w-2 rounded-full bg-asphalt-500"></span>
+        <span id="status-text">Connecting…</span>
+      </div>
     </div>
   </header>
   <main class="flex flex-1 min-h-0 flex-col md:flex-row">
