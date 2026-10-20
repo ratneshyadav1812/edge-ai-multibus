@@ -6,6 +6,9 @@
 <title>Urban Road Intelligence</title>
 
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;800&display=swap" rel="stylesheet">
@@ -18,27 +21,36 @@
     } }
   };
 </script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+
 <style>
   html, body { height: 100%; }
-  .leaflet-container { background: #0f1216; }
+  body { font-variant-numeric: tabular-nums; }
+  .leaflet-container { background: #0f1216; font-family: 'Manrope', sans-serif; }
   .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #1e232b; color: #e7ebf1; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
   .leaflet-popup-content { margin: 12px 14px; font-size: 13px; line-height: 1.45; }
+  .leaflet-container a.leaflet-popup-close-button { color: #aab3c0; }
   .pin { width: 18px; height: 18px; border-radius: 50%; border: 3px solid #0f1216; box-shadow: 0 0 0 2px var(--c); background: var(--c); }
   .pin.fresh { animation: ping 1.4s ease-out 2; }
   @keyframes ping { 0% { box-shadow: 0 0 0 2px var(--c), 0 0 0 2px var(--c); } 100% { box-shadow: 0 0 0 2px var(--c), 0 0 0 22px transparent; } }
+  .card-in { animation: cardIn .35s ease-out; }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+  #feed::-webkit-scrollbar { width: 8px; }
+  #feed::-webkit-scrollbar-thumb { background: #2a313b; border-radius: 8px; }
+  @media (prefers-reduced-motion: reduce) { .pin.fresh, .card-in { animation: none; } }
+  :focus-visible { outline: 2px solid #5eead4; outline-offset: 2px; }
 </style>
 </head>
 
 <body class="bg-asphalt-950 text-slate-200 font-sans antialiased">
 <div class="flex flex-col h-full">
+
+  <!-- Top bar -->
   <header class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 bg-asphalt-900 border-b border-asphalt-700">
     <div>
       <h1 class="text-lg font-extrabold tracking-tight">Urban Road Intelligence</h1>
       <p class="text-xs text-asphalt-500">Live detections from bus-mounted edge cameras</p>
     </div>
+
     <div class="flex items-center gap-5">
       <div class="text-right">
         <div class="text-2xl font-extrabold leading-none text-rose-400" id="count-pothole">0</div>
@@ -54,13 +66,28 @@
       </div>
     </div>
   </header>
+
   <main class="flex flex-1 min-h-0 flex-col md:flex-row">
+    <!-- Map -->
     <section class="relative flex-1 min-h-[45vh]" aria-label="Event map">
       <div id="map" class="absolute inset-0"></div>
+
+      <div class="absolute left-3 bottom-3 z-[1000] flex flex-col gap-2 rounded-lg bg-asphalt-900/90 border border-asphalt-700 p-3 text-xs backdrop-blur">
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input id="follow" type="checkbox" checked class="accent-teal-300"> Pan to new events
+        </label>
+        <div class="flex items-center gap-4 text-asphalt-300">
+          <span class="flex items-center gap-1.5"><i class="h-2.5 w-2.5 rounded-full bg-rose-500"></i>Pothole</span>
+          <span class="flex items-center gap-1.5"><i class="h-2.5 w-2.5 rounded-full bg-amber-400"></i>Congestion</span>
+        </div>
+      </div>
     </section>
+
+    <!-- Feed -->
     <aside class="flex w-full md:w-[24rem] h-[40vh] md:h-auto flex-col bg-asphalt-900 border-t md:border-t-0 md:border-l border-asphalt-700" aria-label="Live feed">
       <div class="flex items-center justify-between px-4 py-3 border-b border-asphalt-700">
         <h2 class="font-bold">Live feed</h2>
+        <button id="test-btn" class="rounded-md border border-asphalt-700 bg-asphalt-800 px-2.5 py-1 text-xs font-semibold text-asphalt-300 hover:bg-asphalt-700 hover:text-white">Add test event</button>
       </div>
       <div id="feed" class="flex-1 overflow-y-auto p-3 space-y-2.5">
         <p id="empty" class="mt-10 px-4 text-center text-sm text-asphalt-500">
@@ -69,10 +96,33 @@
       </div>
     </aside>
   </main>
+</div>
+
 <script>
+(() => {
   const SERVER_URL = 'http://localhost:8000';
+  const MAX_FEED = 100;
+
+  const TYPES = {
+    POTHOLE:    { label: 'Pothole',    color: '#f43f5e', card: 'border-rose-500 bg-rose-500/10',   badge: 'bg-rose-500/20 text-rose-300' },
+    CONGESTION: { label: 'Congestion', color: '#fbbf24', card: 'border-amber-400 bg-amber-400/10', badge: 'bg-amber-400/20 text-amber-300' },
+  };
+  const FALLBACK = { label: 'Event', color: '#5eead4', card: 'border-teal-300 bg-teal-300/10', badge: 'bg-teal-300/20 text-teal-200' };
+
+  // Counters
+  const counts = { POTHOLE: 0, CONGESTION: 0 };
+  const elPothole    = document.getElementById('count-pothole');
+  const elCongestion = document.getElementById('count-congestion');
+  const elDot        = document.getElementById('status-dot');
+  const elText       = document.getElementById('status-text');
+  const elFeed       = document.getElementById('feed');
+  const elEmpty      = document.getElementById('empty');
+  const followChk    = document.getElementById('follow');
+
+  // Leaflet map centred on synthetic GPS start
   const map = L.map('map', { zoomControl: true }).setView([29.9457, 76.8116], 14);
 
+  // Fetch API key from backend, then add tile layer
   fetch(`${SERVER_URL}/api/config`)
     .then(r => r.json())
     .then(({ geoapify_api_key }) => {
@@ -82,11 +132,80 @@
       ).addTo(map);
     })
     .catch(() => {
+      // fallback to CARTO if backend unreachable or key missing
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://carto.com/">CARTO</a>', subdomains: 'abcd', maxZoom: 19,
       }).addTo(map);
     });
+
+  function makeIcon(color) {
+    return L.divIcon({
+      className: '',
+      html: `<div class="pin fresh" style="--c:${color}"></div>`,
+      iconSize: [18, 18], iconAnchor: [9, 9],
+    });
+  }
+
+  function setStatus(connected) {
+    elDot.className  = `h-2 w-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-rose-500'}`;
+    elText.textContent = connected ? 'Connected' : 'Disconnected — retrying…';
+  }
+
+  function addEvent(ev) {
+    const t = TYPES[ev.event_type?.toUpperCase()] || FALLBACK;
+
+    // Map marker
+    const marker = L.marker([ev.latitude, ev.longitude], { icon: makeIcon(t.color) }).addTo(map);
+    marker.bindPopup(
+      `<strong>${t.label}</strong><br>${ev.bus_id}<br>${ev.details}<br>
+       <span style="color:#6b7585">${ev.timestamp}</span>`
+    );
+    if (followChk.checked) map.panTo([ev.latitude, ev.longitude]);
+
+    // Feed card
+    if (counts[ev.event_type?.toUpperCase()] !== undefined) {
+      counts[ev.event_type.toUpperCase()]++;
+      elPothole.textContent    = counts.POTHOLE;
+      elCongestion.textContent = counts.CONGESTION;
+    }
+
+    elEmpty.style.display = 'none';
+    const card = document.createElement('div');
+    card.className = `card-in rounded-lg border p-3 text-sm ${t.card}`;
+    card.innerHTML = `
+      <div class="flex items-center justify-between mb-1">
+        <span class="rounded px-1.5 py-0.5 text-xs font-semibold ${t.badge}">${t.label}</span>
+        <span class="text-xs text-asphalt-500">${ev.bus_id}</span>
+      </div>
+      <div class="font-medium">${ev.details}</div>
+      <div class="mt-1 text-xs text-asphalt-500">${ev.latitude.toFixed(5)}, ${ev.longitude.toFixed(5)} · ${ev.timestamp}</div>
+    `;
+    elFeed.prepend(card);
+
+    // Trim feed length
+    while (elFeed.children.length > MAX_FEED + 1) {
+      elFeed.removeChild(elFeed.lastChild);
+    }
+  }
+
+  // Socket.IO connection — auto-reconnects
+  const socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
+  socket.on('connect',    () => setStatus(true));
+  socket.on('disconnect', () => setStatus(false));
+  socket.on('new_road_event', addEvent);
+
+  // Test button — fires a synthetic event without hitting the backend
+  document.getElementById('test-btn').addEventListener('click', () => {
+    addEvent({
+      bus_id:     'TEST-BUS',
+      event_type: Math.random() > 0.5 ? 'POTHOLE' : 'CONGESTION',
+      latitude:   29.9457 + (Math.random() - 0.5) * 0.01,
+      longitude:  76.8116 + (Math.random() - 0.5) * 0.01,
+      timestamp:  new Date().toISOString().replace('T', ' ').slice(0, 19),
+      details:    'Synthetic test event',
+    });
+  });
+})();
 </script>
-</div>
 </body>
 </html>
