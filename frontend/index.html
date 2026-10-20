@@ -24,6 +24,11 @@
 <style>
   html, body { height: 100%; }
   .leaflet-container { background: #0f1216; }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #1e232b; color: #e7ebf1; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+  .leaflet-popup-content { margin: 12px 14px; font-size: 13px; line-height: 1.45; }
+  .pin { width: 18px; height: 18px; border-radius: 50%; border: 3px solid #0f1216; box-shadow: 0 0 0 2px var(--c); background: var(--c); }
+  .pin.fresh { animation: ping 1.4s ease-out 2; }
+  @keyframes ping { 0% { box-shadow: 0 0 0 2px var(--c), 0 0 0 2px var(--c); } 100% { box-shadow: 0 0 0 2px var(--c), 0 0 0 22px transparent; } }
 </style>
 </head>
 
