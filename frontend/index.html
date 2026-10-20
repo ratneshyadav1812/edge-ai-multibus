@@ -40,6 +40,14 @@
       <p class="text-xs text-asphalt-500">Live detections from bus-mounted edge cameras</p>
     </div>
     <div class="flex items-center gap-5">
+      <div class="text-right">
+        <div class="text-2xl font-extrabold leading-none text-rose-400" id="count-pothole">0</div>
+        <div class="text-xs text-asphalt-300">Potholes</div>
+      </div>
+      <div class="text-right">
+        <div class="text-2xl font-extrabold leading-none text-amber-400" id="count-congestion">0</div>
+        <div class="text-xs text-asphalt-300">Congestion</div>
+      </div>
       <div id="status" class="flex items-center gap-2 rounded-full bg-asphalt-800 border border-asphalt-700 px-3 py-1.5 text-xs font-semibold" role="status" aria-live="polite">
         <span id="status-dot" class="h-2 w-2 rounded-full bg-asphalt-500"></span>
         <span id="status-text">Connecting…</span>
@@ -50,6 +58,16 @@
     <section class="relative flex-1 min-h-[45vh]" aria-label="Event map">
       <div id="map" class="absolute inset-0"></div>
     </section>
+    <aside class="flex w-full md:w-[24rem] h-[40vh] md:h-auto flex-col bg-asphalt-900 border-t md:border-t-0 md:border-l border-asphalt-700" aria-label="Live feed">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-asphalt-700">
+        <h2 class="font-bold">Live feed</h2>
+      </div>
+      <div id="feed" class="flex-1 overflow-y-auto p-3 space-y-2.5">
+        <p id="empty" class="mt-10 px-4 text-center text-sm text-asphalt-500">
+          No events yet. Detections from your buses will appear here as they arrive.
+        </p>
+      </div>
+    </aside>
   </main>
 <script>
   const SERVER_URL = 'http://localhost:8000';
