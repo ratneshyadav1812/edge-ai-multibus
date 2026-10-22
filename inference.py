@@ -9,6 +9,7 @@ from ultralytics import YOLO
 def run(video_path: str = "test_video.mp4", min_pothole_area: int = 1000) -> None:
     print("Loading models...")
     pothole_model = YOLO("pothole_model.pt")
+    vehicle_model = YOLO("yolo11n.pt")
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -20,6 +21,13 @@ def run(video_path: str = "test_video.mp4", min_pothole_area: int = 1000) -> Non
             break
 
         pothole_res = pothole_model(frame, verbose=False)[0]
+        vehicle_res = vehicle_model.track(
+            frame, classes=[2, 3, 5, 7], persist=True,
+            tracker="bytetrack.yaml", verbose=False,
+        )[0]
+
+        n_vehicles = len(vehicle_res.boxes)
+        traffic    = "High" if n_vehicles >= 5 else "Medium" if n_vehicles >= 2 else "Low"
 
         for box in pothole_res.boxes:
             x1, y1, x2, y2 = box.xyxy[0].tolist()
