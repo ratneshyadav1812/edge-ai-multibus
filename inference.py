@@ -6,14 +6,23 @@ and POSTs events to the backend server.
 import csv
 import os
 import random
+import requests
 from datetime import datetime
+from engine.congestion_filter import EdgeCongestionFilter
 import cv2
 from ultralytics import YOLO
 
-def run(video_path: str = "test_video.mp4", min_pothole_area: int = 1000, bus_id: str = "BUS-001") -> None:
+def post_event(backend_url: str, payload: dict) -> None:
+    try:
+        requests.post(f"{backend_url}/api/events", json=payload, timeout=0.5)
+    except requests.exceptions.RequestException:
+        pass
+
+def run(video_path: str = "test_video.mp4", backend_url: str = "http://localhost:8000", min_pothole_area: int = 1000, bus_id: str = "BUS-001") -> None:
     print("Loading models...")
     pothole_model = YOLO("pothole_model.pt")
     vehicle_model = YOLO("yolo11n.pt")
+    congestion_manager = EdgeCongestionFilter(sustain_time=5, cooldown_time=15, dist_threshold=500)
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -62,6 +71,11 @@ def run(video_path: str = "test_video.mp4", min_pothole_area: int = 1000, bus_id
                 details = f"{size} ({int(area)}px)"
                 pw.writerow([ts, bus_id, "POTHOLE", p_lat, p_lon, details])
                 pf.flush()
+                post_event(backend_url, {
+                    "bus_id": bus_id, "event_type": "POTHOLE",
+                    "latitude": p_lat, "longitude": p_lon,
+                    "timestamp": ts, "details": details,
+                })
 
             cv2.imshow("Urban Road Intelligence", cv2.resize(frame, (800, 450)))
             if cv2.waitKey(1) & 0xFF == ord("q"):
