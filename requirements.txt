@@ -7,7 +7,47 @@ torchvision==0.29.1
 # Backend server
 fastapi==0.162.0
 uvicorn==0.54.0
+aiofiles>=23.0          # required by FastAPI StaticFiles
+python-dotenv>=1.0.0    # loads .env into os.environ
 python-socketio==5.17.0
-python-dotenv>=1.0.0
+python-engineio==4.14.0
+starlette==1.10.0
 pydantic==2.14.1
+
+# HTTP client (used by inference to POST events)
 requests==2.34.2
+
+# Supporting libs (pulled in as deps, pinned for reproducibility)
+numpy==2.4.6
+pillow==13.0.0
+pandas==3.1.0
+PyYAML==6.0.3
+anyio==4.15.1
+h11==0.16.0
+click==8.5.0
+certifi==2026.10.23
+charset-normalizer==3.5.2
+idna==3.20
+urllib3==2.8.0
+python-dateutil==3.0.0
+six==1.17.0
+packaging==26.3
+lap==0.5.13
+psutil==7.2.2
+sympy==1.14.0
+mpmath==1.3.0
+networkx==3.6.1
+filelock==4.2.4
+fsspec==2026.9.0
+jinja2==3.1.6
+MarkupSafe==3.0.4
+bidict==0.24.1
+simple-websocket==1.1.0
+wsproto==1.3.2
+httpx==0.28.1
+httpcore==1.0.9
+annotated-types==0.8.0
+pydantic-core==2.50.1
+typing-extensions==4.16.0
+typing-inspection==0.4.4
+opentelemetry-api==1.45.1
