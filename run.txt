@@ -1,0 +1,7 @@
+.\.venv\Scripts\activate
+.\run_backend.bat
+
+.\.venv\Scripts\activate
+.\run_inference.bat
+
+file:///D:/PotholeProject/frontend/index.html
