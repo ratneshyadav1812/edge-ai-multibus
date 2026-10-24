@@ -6,7 +6,7 @@ __pycache__/
 # Virtual environments
 .venv/
 
-# Model weights
+# Model weights (large binaries — store in DVC/LFS or download separately)
 *.pth
 *.onnx
 
@@ -38,3 +38,5 @@ merged_pothole_dataset.zip
 # OS
 .DS_Store
 Thumbs.db
+
+/pooutput/
